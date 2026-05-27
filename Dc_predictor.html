@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chloride Diffusion Predictor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#1a1f24;--paper:#f4f1ea;--card:#fefdfb;--line:#d8d2c4;--accent:#0b6e63;--accent2:#c14a28;--warn:#c89a2b;--muted:#6b6356;--low:#2d8a6f;--mid:#c89a2b;--high:#c14a28}
+body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;line-height:1.55;padding:32px 20px;background-image:radial-gradient(circle at 1px 1px,rgba(0,0,0,0.03) 1px,transparent 0);background-size:24px 24px}
+.wrap{max-width:1040px;margin:0 auto}
+header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:28px}
+.kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-family:'Fraunces',serif;font-size:38px;line-height:1.05;font-weight:600;margin:8px 0 6px}
+.sub{color:var(--muted);font-size:14px;max-width:640px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:24px;box-shadow:3px 3px 0 rgba(26,31,36,0.06)}
+.card h2{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card h2 .n{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--ink);color:var(--paper);width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;font-family:'IBM Plex Mono',monospace}
+.seg{display:flex;border:1.5px solid var(--ink);border-radius:3px;overflow:hidden}
+.seg button{flex:1;padding:10px 6px;border:none;background:var(--card);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:var(--ink);transition:all .15s;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--ink);color:var(--paper)}
+.seg button:hover:not(.on){background:#ece5d8}
+.slider-row{display:flex;align-items:center;gap:14px}
+input[type=range]{flex:1;accent-color:var(--accent);height:4px}
+.slider-val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;min-width:54px;text-align:right;color:var(--accent)}
+.result{background:var(--ink);color:var(--paper);border-radius:4px;padding:28px;position:relative;overflow:hidden}
+.result::before{content:'';position:absolute;top:0;right:0;width:120px;height:120px;background:radial-gradient(circle,rgba(11,110,99,0.4),transparent 70%)}
+.dc-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.6}
+.dc-val{font-family:'Fraunces',serif;font-size:52px;font-weight:700;line-height:1;margin:6px 0}
+.dc-unit{font-size:17px;opacity:.6;font-weight:400}
+.dc-ci{font-family:'IBM Plex Mono',monospace;font-size:13px;opacity:.75;margin-bottom:16px}
+.grade{display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;text-transform:uppercase}
+.curve-card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px;box-shadow:3px 3px 0 rgba(26,31,36,0.06)}
+.curve-card h2{font-family:'Fraunces',serif;font-size:17px;margin-bottom:4px}
+.curve-card .cap{font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic}
+.advice{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:3px;padding:18px 20px}
+.advice h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:10px;font-family:'IBM Plex Mono',monospace}
+.advice p{font-size:14px;margin-bottom:8px}.advice .big{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--accent2)}
+.disclaimer{background:#f9f5ec;border:1px dashed var(--warn);border-radius:3px;padding:12px 16px;font-size:12px;color:var(--muted);margin-top:14px}
+.note{font-size:12px;color:var(--muted);margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font-style:italic}
+footer{margin-top:32px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;letter-spacing:1px}
+svg text{font-family:'IBM Plex Mono',monospace}
+</style></head>
+<body><div class="wrap">
+<header>
+  <div class="kicker">Machine Learning Surrogate Model · R² = 0.79</div>
+  <h1>Chloride Diffusion Predictor</h1>
+  <p class="sub">Enter mix &amp; exposure conditions to predict the diffusion coefficient (D<sub>c</sub>) <em>and</em> the resulting iodide penetration profile, from TXM-trained data (864 measurements).</p>
+</header>
+<div class="grid">
+  <div class="card">
+    <h2><span class="n">1</span>Mix &amp; Environment</h2>
+    <div class="field"><label>Concrete type</label><div class="seg" id="group"><button data-v="GA" class="on">Conventional (GA)</button><button data-v="GB">PVA fiber (GB)</button></div></div>
+    <div class="field"><label>Exposure environment</label><div class="seg" id="env"><button data-v="PW" class="on">Plain water</button><button data-v="SW">Seawater</button></div></div>
+    <div class="field"><label>Curing period</label><div class="seg" id="curing"><button data-v="14">14 days</button><button data-v="70" class="on">70 days</button></div></div>
+  </div>
+  <div class="card">
+    <h2><span class="n">2</span>Exposure Condition</h2>
+    <div class="field"><label>Freeze–thaw cycles</label><div class="slider-row"><input type="range" id="ft" min="0" max="500" step="125" value="250"><span class="slider-val" id="ftv">250</span></div></div>
+    <div class="field"><label>Ponding period (KI immersion)</label><div class="slider-row"><input type="range" id="pond" min="0" max="2" step="1" value="2"><span class="slider-val" id="pondv">28 d</span></div></div>
+    <div class="disclaimer">Trained on discrete conditions (w/c = 0.40). The penetration curve is reconstructed from the predicted D<sub>c</sub> via Fick's 2nd law — indicative, not a substitute for ASTM C1556.</div>
+  </div>
+</div>
+<div class="grid">
+  <div class="result">
+    <div class="dc-label">Predicted diffusion coefficient</div>
+    <div class="dc-val" id="dcval">—<span class="dc-unit"> ×10⁻¹² m²/s</span></div>
+    <div class="dc-ci" id="dcci"></div>
+    <span class="grade" id="grade"></span>
+  </div>
+  <div class="curve-card">
+    <h2>Predicted Penetration Profile</h2>
+    <div class="cap">Iodide concentration vs depth (Fick's 2nd law, t = ponding period)</div>
+    <svg id="curve" viewBox="0 0 360 220" width="100%"></svg>
+  </div>
+</div>
+<div class="advice"><h3>Durability Insight</h3><div id="advice-body"></div></div>
+<p class="note">This tool operationalizes a Random Forest model benchmarked against a damage-evolution relationship. Curve = predicted D<sub>c</sub> applied to the 1-D Fickian solution. See paper for methodology, SHAP analysis, and limitations.</p>
+<footer>TXM × MACHINE LEARNING · CASE STUDY TOOL</footer>
+</div>
+<script>
+const LOOKUP={"14_PW_GA_0_3": {"dc": 3.201, "std": 0.395}, "14_PW_GA_0_14": {"dc": 0.669, "std": 0.087}, "14_PW_GA_0_28": {"dc": 0.435, "std": 0.041}, "14_PW_GA_125_3": {"dc": 3.451, "std": 0.269}, "14_PW_GA_125_14": {"dc": 1.051, "std": 0.091}, "14_PW_GA_125_28": {"dc": 0.68, "std": 0.047}, "14_PW_GA_250_3": {"dc": 4.117, "std": 0.206}, "14_PW_GA_250_14": {"dc": 1.284, "std": 0.097}, "14_PW_GA_250_28": {"dc": 0.755, "std": 0.041}, "14_PW_GA_375_3": {"dc": 4.287, "std": 0.638}, "14_PW_GA_375_14": {"dc": 1.307, "std": 0.121}, "14_PW_GA_375_28": {"dc": 0.822, "std": 0.075}, "14_PW_GA_500_3": {"dc": 4.287, "std": 0.638}, "14_PW_GA_500_14": {"dc": 1.307, "std": 0.121}, "14_PW_GA_500_28": {"dc": 0.822, "std": 0.075}, "14_PW_GB_0_3": {"dc": 3.86, "std": 0.411}, "14_PW_GB_0_14": {"dc": 0.664, "std": 0.067}, "14_PW_GB_0_28": {"dc": 0.481, "std": 0.059}, "14_PW_GB_125_3": {"dc": 3.551, "std": 0.336}, "14_PW_GB_125_14": {"dc": 1.071, "std": 0.103}, "14_PW_GB_125_28": {"dc": 0.746, "std": 0.08}, "14_PW_GB_250_3": {"dc": 4.649, "std": 0.22}, "14_PW_GB_250_14": {"dc": 1.575, "std": 0.138}, "14_PW_GB_250_28": {"dc": 0.834, "std": 0.072}, "14_PW_GB_375_3": {"dc": 4.968, "std": 0.366}, "14_PW_GB_375_14": {"dc": 1.759, "std": 0.285}, "14_PW_GB_375_28": {"dc": 1.068, "std": 0.224}, "14_PW_GB_500_3": {"dc": 4.968, "std": 0.366}, "14_PW_GB_500_14": {"dc": 1.759, "std": 0.285}, "14_PW_GB_500_28": {"dc": 1.068, "std": 0.224}, "14_SW_GA_0_3": {"dc": 3.225, "std": 0.367}, "14_SW_GA_0_14": {"dc": 0.707, "std": 0.091}, "14_SW_GA_0_28": {"dc": 0.461, "std": 0.048}, "14_SW_GA_125_3": {"dc": 3.644, "std": 0.342}, "14_SW_GA_125_14": {"dc": 1.127, "std": 0.114}, "14_SW_GA_125_28": {"dc": 0.724, "std": 0.075}, "14_SW_GA_250_3": {"dc": 4.262, "std": 0.314}, "14_SW_GA_250_14": {"dc": 1.429, "std": 0.13}, "14_SW_GA_250_28": {"dc": 0.81, "std": 0.062}, "14_SW_GA_375_3": {"dc": 5.504, "std": 0.235}, "14_SW_GA_375_14": {"dc": 1.498, "std": 0.138}, "14_SW_GA_375_28": {"dc": 0.996, "std": 0.211}, "14_SW_GA_500_3": {"dc": 5.504, "std": 0.235}, "14_SW_GA_500_14": {"dc": 1.498, "std": 0.138}, "14_SW_GA_500_28": {"dc": 0.996, "std": 0.211}, "14_SW_GB_0_3": {"dc": 3.902, "std": 0.411}, "14_SW_GB_0_14": {"dc": 0.717, "std": 0.07}, "14_SW_GB_0_28": {"dc": 0.518, "std": 0.058}, "14_SW_GB_125_3": {"dc": 3.954, "std": 0.401}, "14_SW_GB_125_14": {"dc": 1.142, "std": 0.108}, "14_SW_GB_125_28": {"dc": 0.792, "std": 0.074}, "14_SW_GB_250_3": {"dc": 4.966, "std": 0.204}, "14_SW_GB_250_14": {"dc": 1.66, "std": 0.167}, "14_SW_GB_250_28": {"dc": 0.904, "std": 0.13}, "14_SW_GB_375_3": {"dc": 5.756, "std": 0.239}, "14_SW_GB_375_14": {"dc": 1.868, "std": 0.169}, "14_SW_GB_375_28": {"dc": 1.265, "std": 0.128}, "14_SW_GB_500_3": {"dc": 5.756, "std": 0.239}, "14_SW_GB_500_14": {"dc": 1.868, "std": 0.169}, "14_SW_GB_500_28": {"dc": 1.265, "std": 0.128}, "70_PW_GA_0_3": {"dc": 0.647, "std": 0.068}, "70_PW_GA_0_14": {"dc": 0.338, "std": 0.051}, "70_PW_GA_0_28": {"dc": 0.301, "std": 0.024}, "70_PW_GA_125_3": {"dc": 0.861, "std": 0.281}, "70_PW_GA_125_14": {"dc": 0.363, "std": 0.054}, "70_PW_GA_125_28": {"dc": 0.317, "std": 0.035}, "70_PW_GA_250_3": {"dc": 2.446, "std": 0.811}, "70_PW_GA_250_14": {"dc": 0.435, "std": 0.063}, "70_PW_GA_250_28": {"dc": 0.375, "std": 0.049}, "70_PW_GA_375_3": {"dc": 2.672, "std": 0.751}, "70_PW_GA_375_14": {"dc": 0.458, "std": 0.067}, "70_PW_GA_375_28": {"dc": 0.403, "std": 0.052}, "70_PW_GA_500_3": {"dc": 2.917, "std": 0.578}, "70_PW_GA_500_14": {"dc": 0.738, "std": 0.033}, "70_PW_GA_500_28": {"dc": 0.471, "std": 0.074}, "70_PW_GB_0_3": {"dc": 0.721, "std": 0.075}, "70_PW_GB_0_14": {"dc": 0.466, "std": 0.089}, "70_PW_GB_0_28": {"dc": 0.375, "std": 0.043}, "70_PW_GB_125_3": {"dc": 1.528, "std": 0.366}, "70_PW_GB_125_14": {"dc": 0.497, "std": 0.071}, "70_PW_GB_125_28": {"dc": 0.402, "std": 0.066}, "70_PW_GB_250_3": {"dc": 1.62, "std": 0.22}, "70_PW_GB_250_14": {"dc": 0.804, "std": 0.11}, "70_PW_GB_250_28": {"dc": 0.676, "std": 0.142}, "70_PW_GB_375_3": {"dc": 1.849, "std": 0.444}, "70_PW_GB_375_14": {"dc": 0.801, "std": 0.105}, "70_PW_GB_375_28": {"dc": 0.683, "std": 0.136}, "70_PW_GB_500_3": {"dc": 2.883, "std": 0.606}, "70_PW_GB_500_14": {"dc": 1.032, "std": 0.12}, "70_PW_GB_500_28": {"dc": 0.691, "std": 0.172}, "70_SW_GA_0_3": {"dc": 0.679, "std": 0.074}, "70_SW_GA_0_14": {"dc": 0.346, "std": 0.047}, "70_SW_GA_0_28": {"dc": 0.312, "std": 0.03}, "70_SW_GA_125_3": {"dc": 1.069, "std": 0.26}, "70_SW_GA_125_14": {"dc": 0.369, "std": 0.048}, "70_SW_GA_125_28": {"dc": 0.327, "std": 0.036}, "70_SW_GA_250_3": {"dc": 1.92, "std": 0.297}, "70_SW_GA_250_14": {"dc": 0.457, "std": 0.056}, "70_SW_GA_250_28": {"dc": 0.4, "std": 0.063}, "70_SW_GA_375_3": {"dc": 2.139, "std": 0.268}, "70_SW_GA_375_14": {"dc": 0.495, "std": 0.042}, "70_SW_GA_375_28": {"dc": 0.441, "std": 0.061}, "70_SW_GA_500_3": {"dc": 2.215, "std": 0.271}, "70_SW_GA_500_14": {"dc": 0.801, "std": 0.037}, "70_SW_GA_500_28": {"dc": 0.536, "std": 0.073}, "70_SW_GB_0_3": {"dc": 0.737, "std": 0.099}, "70_SW_GB_0_14": {"dc": 0.463, "std": 0.071}, "70_SW_GB_0_28": {"dc": 0.382, "std": 0.036}, "70_SW_GB_125_3": {"dc": 1.589, "std": 0.186}, "70_SW_GB_125_14": {"dc": 0.49, "std": 0.052}, "70_SW_GB_125_28": {"dc": 0.405, "std": 0.055}, "70_SW_GB_250_3": {"dc": 1.87, "std": 0.319}, "70_SW_GB_250_14": {"dc": 0.68, "std": 0.146}, "70_SW_GB_250_28": {"dc": 0.566, "std": 0.06}, "70_SW_GB_375_3": {"dc": 2.221, "std": 0.305}, "70_SW_GB_375_14": {"dc": 0.677, "std": 0.138}, "70_SW_GB_375_28": {"dc": 0.573, "std": 0.053}, "70_SW_GB_500_3": {"dc": 2.463, "std": 0.27}, "70_SW_GB_500_14": {"dc": 1.646, "std": 0.284}, "70_SW_GB_500_28": {"dc": 0.97, "std": 0.114}};
+const Q_LOW=0.61,Q_HIGH=1.20,PONDMAP=[3,14,28];
+let state={group:'GA',env:'PW',curing:'70',ft:250,pond:28};
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+document.querySelectorAll('.seg').forEach(seg=>{seg.addEventListener('click',e=>{if(e.target.tagName!=='BUTTON')return;seg.querySelectorAll('button').forEach(b=>b.classList.remove('on'));e.target.classList.add('on');state[seg.id]=e.target.dataset.v;update();});});
+document.getElementById('ft').addEventListener('input',e=>{state.ft=+e.target.value;document.getElementById('ftv').textContent=e.target.value;update();});
+document.getElementById('pond').addEventListener('input',e=>{state.pond=PONDMAP[+e.target.value];document.getElementById('pondv').textContent=state.pond+' d';update();});
+function lookup(s){return LOOKUP[`${s.curing}_${s.env}_${s.group}_${s.ft}_${s.pond}`]||null;}
+function gradeOf(dc){if(dc<Q_LOW)return{t:'Low',c:'#2d8a6f'};if(dc<Q_HIGH)return{t:'Moderate',c:'#c89a2b'};return{t:'High',c:'#c14a28'};}
+function drawCurve(dc,color){
+  const t=state.pond*86400, Dc=dc*1e-12, Cs=1.0;
+  const W=360,H=220,mL=40,mB=34,mT=12,mR=12;
+  const x0=mL,x1=W-mR,y0=H-mB,y1=mT;
+  let pts=[];
+  for(let i=0;i<=60;i++){const xmm=i/60*10;const xm=xmm/1000;const c=Cs*(1-erf(xm/(2*Math.sqrt(Dc*t))));pts.push([x0+(xmm/10)*(x1-x0),y0-c*(y0-y1)]);}
+  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=path+` L${x1} ${y0} L${x0} ${y0} Z`;
+  let g='';
+  for(let d=0;d<=10;d+=2){const px=x0+(d/10)*(x1-x0);g+=`<line x1="${px}" y1="${y0}" x2="${px}" y2="${y1}" stroke="#e5dfd2" stroke-width="0.5"/><text x="${px}" y="${y0+14}" font-size="9" fill="#6b6356" text-anchor="middle">${d}</text>`;}
+  for(let c=0;c<=1;c+=0.25){const py=y0-c*(y0-y1);g+=`<line x1="${x0}" y1="${py}" x2="${x1}" y2="${py}" stroke="#e5dfd2" stroke-width="0.5"/><text x="${x0-5}" y="${py+3}" font-size="9" fill="#6b6356" text-anchor="end">${c}</text>`;}
+  return `<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.35"/><stop offset="100%" stop-color="${color}" stop-opacity="0.02"/></linearGradient></defs>${g}<path d="${area}" fill="url(#ag)"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2.5"/><text x="${(x0+x1)/2}" y="${H-3}" font-size="9" fill="#6b6356" text-anchor="middle">Depth (mm)</text><text x="12" y="${(y0+y1)/2}" font-size="9" fill="#6b6356" text-anchor="middle" transform="rotate(-90 12 ${(y0+y1)/2})">Rel. conc.</text>`;
+}
+function update(){
+  const r=lookup(state);if(!r){document.getElementById('dcval').innerHTML='N/A';return;}
+  const g=gradeOf(r.dc);
+  document.getElementById('dcval').innerHTML=r.dc.toFixed(2)+'<span class="dc-unit"> ×10⁻¹² m²/s</span>';
+  document.getElementById('dcci').textContent='95% range: '+Math.max(0,r.dc-1.96*r.std).toFixed(2)+' – '+(r.dc+1.96*r.std).toFixed(2);
+  const gr=document.getElementById('grade');gr.textContent=g.t+' ingress risk';gr.style.background=g.c;gr.style.color='#fff';
+  document.getElementById('curve').innerHTML=drawCurve(r.dc,g.c);
+  let body='';
+  if(state.curing==='14'){const b=lookup({...state,curing:'70'});if(b){const drop=((r.dc-b.dc)/r.dc*100).toFixed(0);body=`<p>Extending curing <b>14 → 70 days</b> lowers D<sub>c</sub> to <span class="big">${b.dc.toFixed(2)}</span> (≈ <b>${drop}% less</b> ingress) — the strongest lever here.</p>`;}}
+  else{const w=lookup({...state,curing:'14'});if(w){const rise=((w.dc-r.dc)/r.dc*100).toFixed(0);body=`<p>Well-cured mix. Reducing to 14-day curing would raise D<sub>c</sub> by ≈ <span class="big">+${rise}%</span>.</p>`;}}
+  if(state.group==='GB'){const ga=lookup({...state,group:'GA'});if(ga&&ga.dc<r.dc)body+=`<p style="color:var(--muted)">Note: PVA fiber shows higher D<sub>c</sub> than conventional (GA: ${ga.dc.toFixed(2)}) — fibers did not improve resistance.</p>`;}
+  document.getElementById('advice-body').innerHTML=body;
+}
+update();
+</script></body></html>
